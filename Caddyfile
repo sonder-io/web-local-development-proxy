@@ -1,0 +1,25 @@
+
+
+:80 {
+  reverse_proxy /portal_api/* {
+    to https://app.staging.sondersafe.com # this is where the portal_api should point to. It will bring the true portal data back.
+      header_up Host {http.reverse_proxy.upstream.host}
+      transport http {
+          tls
+      }
+  }
+  reverse_proxy /ehr_api/* { # if some part of the staging api is not ready, ( in this case it is ehr_api), simply register a webhook on pipedream.net and mock the response from there.
+    to https://enhrw06j5y0u2cn.m.pipedream.net 
+      header_up Host {http.reverse_proxy.upstream.host}
+      transport http {
+          tls
+      }
+  }  
+  reverse_proxy { # fall back paths goes to local yarn server.
+    to http://host.docker.internal:3000  # this is your local web app, which should already listen to your port
+      header_up Host {http.reverse_proxy.upstream.host}
+  }
+  log {
+    level DEBUG
+  }
+}
